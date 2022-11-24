@@ -3,7 +3,9 @@
 This is the first challenge for this week.
 
 Challenge Name: ScrapIt
+
 Final Submission Deadline: Dec 4, 2022
+
 Prize: Rs 1000 - Esewa Topup
 
 ## Problem
