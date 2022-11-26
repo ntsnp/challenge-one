@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -34,6 +35,13 @@ type blog struct {
 
 func getBlogs(link string, divClass string, bgDivClass string) ([]blog, error) {
 	var blogs []blog
+
+	u, err := url.ParseRequestURI(link)
+	if err != nil {
+		return blogs, err
+	}
+	protocol := u.Scheme + "://"
+	host := u.Host
 
 	if !govalidator.IsURL(link) {
 		return blogs, errors.New("Given link is not an URL")
@@ -68,6 +76,7 @@ func getBlogs(link string, divClass string, bgDivClass string) ([]blog, error) {
 					for _, decl := range rule.Declarations {
 						if decl.Property == "background-image" {
 							bgUrl = urlFromCSSVal(decl.Value)
+							bgUrl = cleanUrl(bgUrl, protocol, host)
 						}
 					}
 				}
@@ -80,7 +89,10 @@ func getBlogs(link string, divClass string, bgDivClass string) ([]blog, error) {
 		})
 	})
 
-	c.Visit(link)
+	err = c.Visit(link)
+	if err != nil {
+		return blogs, err
+	}
 
 	return blogs, nil
 }
@@ -92,21 +104,38 @@ func getBlogs(link string, divClass string, bgDivClass string) ([]blog, error) {
  *
  * Example: `url(//foo)` -> `foo`
  */
-func urlFromCSSVal(s string) string {
-	i := strings.Index(s, "(")
+func urlFromCSSVal(v string) string {
+	i := strings.Index(v, "(")
 	if i >= 0 {
-		j := strings.Index(s, ")")
+		j := strings.Index(v, ")")
 		if j >= 0 {
+			/* the link may have leading `//` */
 			k := 0
-			for ; k < len(s)-i; k++ {
-				if s[i+k+1] != '/' {
+			for ; k < len(v)-i; k++ {
+				if v[i+k+1] != '/' {
 					break
 				}
 			}
-			return s[i+k+1 : j] /* the link has leading `//` */
+			return v[i+k+1 : j]
 		}
 	}
 	return ""
+}
+
+func cleanUrl(inputUrl string, protocol string, host string) string {
+	_, err := url.ParseRequestURI(inputUrl)
+	if err == nil {
+		return inputUrl
+	}
+
+	splits := strings.Split(inputUrl, "/")
+	if !strings.Contains(splits[0], ".") {
+		inputUrl, _ = url.JoinPath(protocol, host, inputUrl)
+	} else {
+		inputUrl, _ = url.JoinPath(protocol, inputUrl)
+	}
+
+	return inputUrl
 }
 
 /* Entry point */
@@ -118,6 +147,7 @@ func main() {
 	}
 
 	for _, blog := range blogs {
-		fmt.Println(blog.title, blog.thumbnailLink)
+		fmt.Println(blog.title)
+		fmt.Println(blog.thumbnailLink)
 	}
 }
