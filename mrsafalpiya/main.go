@@ -1,25 +1,66 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"log"
 
-type Blog struct {
-	Title         string
-	ThumbnailLink string
+	"github.com/asaskevich/govalidator"
+	"github.com/gocolly/colly"
+)
+
+// Constants
+// ---------
+
+const LINK = "https://blog.sentry.io"
+const BLOG_DIV_CLASS = ".css-spjg5j.e19gd7e57"
+const BLOG_BG_DIV_CLASS = ".e19gd7e53"
+
+// Structs
+// -------
+
+type blog struct {
+	title         string
+	thumbnailLink string
 }
 
-func main() {
-	var blogs []Blog
+// Functions
+// ---------
 
-	blogs = append(blogs, Blog{
-		Title:         "Foo",
-		ThumbnailLink: "Bar",
+/* Blogs */
+
+func getBlogs(link string, divClass string, bgDivClass string) ([]blog, error) {
+	var blogs []blog
+
+	if !govalidator.IsURL(link) {
+		return blogs, errors.New("Given link is not an URL")
+	}
+
+	c := colly.NewCollector()
+	c.OnHTML(divClass, func(e *colly.HTMLElement) {
+		title := e.ChildText("h2")
+
+		blogs = append(blogs, blog{
+			title:         title,
+			thumbnailLink: "",
+		})
 	})
-	blogs = append(blogs, Blog{
-		Title:         "Bar",
-		ThumbnailLink: "Buzz",
-	})
+	c.Visit(link)
+
+	return blogs, nil
+}
+
+/* File Handling */
+
+/* Entry point */
+
+func main() {
+	blogs, err := getBlogs(LINK, BLOG_DIV_CLASS, BLOG_BG_DIV_CLASS)
+	if err != nil {
+		log.Fatalf("[ERROR] Couldn't get blogs: %s", err.Error())
+	}
 
 	for _, blog := range blogs {
-		fmt.Println(blog.Title, "---", blog.ThumbnailLink)
+		fmt.Println(blog.title)
 	}
 }
