@@ -19,7 +19,11 @@ const STYLE_ATTRIB = "data-emotion"
 // Functions
 // ---------
 
-func getBlogs(link string, blogClass string, blogLinkClass string, blogStyleClass string, styleAttrib string) ([]scrapit.Blog, error) {
+/*
+ * Scrapes blogs from at most `maxPostsPage` post pages. Pass 0 to get all the
+ * blogs.
+ */
+func getBlogs(maxPostsPage uint, link string, blogClass string, blogLinkClass string, blogStyleClass string, styleAttrib string) ([]scrapit.Blog, error) {
 	scrapitInstance, err := scrapit.NewScrapit(link)
 	if err != nil {
 		return scrapitInstance.Blogs, err
@@ -28,7 +32,11 @@ func getBlogs(link string, blogClass string, blogLinkClass string, blogStyleClas
 
 	scrapitInstance.InitBlogsScrape(blogClass, blogLinkClass, blogStyleClass, styleAttrib)
 
-	err = scrapitInstance.Run()
+	if maxPostsPage == 0 {
+		log.Println("NOTE: All blog posts are begin scraped. This may take a while!")
+	}
+
+	err = scrapitInstance.Run(maxPostsPage, log.Default().Writer())
 	if err != nil {
 		return scrapitInstance.Blogs, err
 	}
@@ -37,7 +45,7 @@ func getBlogs(link string, blogClass string, blogLinkClass string, blogStyleClas
 }
 
 func main() {
-	blogs, err := getBlogs(LINK, BLOG_CLASS, BLOG_LINK_CLASS, BLOG_STYLE_CLASS, STYLE_ATTRIB)
+	blogs, err := getBlogs(2, LINK, BLOG_CLASS, BLOG_LINK_CLASS, BLOG_STYLE_CLASS, STYLE_ATTRIB)
 	if err != nil {
 		log.Fatalf("[ERROR] Couldn't get blogs: %s", err.Error())
 	}

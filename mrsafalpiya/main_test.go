@@ -9,6 +9,7 @@ import (
 
 func Test_getBlogs(t *testing.T) {
 	type args struct {
+		maxPostsPage   uint
 		link           string
 		blogClass      string
 		blogLinkClass  string
@@ -24,6 +25,7 @@ func Test_getBlogs(t *testing.T) {
 		{
 			name: "Positive outcome",
 			args: args{
+				maxPostsPage:   1,
 				link:           LINK,
 				blogClass:      BLOG_CLASS,
 				blogLinkClass:  BLOG_LINK_CLASS,
@@ -127,7 +129,7 @@ func Test_getBlogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getBlogs(tt.args.link, tt.args.blogClass, tt.args.blogLinkClass, tt.args.blogStyleClass, tt.args.styleAttrib)
+			got, err := getBlogs(tt.args.maxPostsPage, tt.args.link, tt.args.blogClass, tt.args.blogLinkClass, tt.args.blogStyleClass, tt.args.styleAttrib)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getBlogs() error = %v, wantErr %v", err, tt.wantErr)
 				return

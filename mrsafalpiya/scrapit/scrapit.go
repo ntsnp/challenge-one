@@ -2,6 +2,8 @@ package scrapit
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"log"
 	"net/url"
 	"strings"
@@ -99,10 +101,27 @@ func (s *scrapit) InitBlogsScrape(blogClass string, blogLinkClass string, blogSt
 	})
 }
 
-func (s *scrapit) Run() error {
+/*
+ * Scrapes blogs from at most `maxPostsPage` post pages. Pass 0 to get all the
+ * blogs.
+ *
+ * Writes info about the scrape to the given `w`.
+ */
+func (s *scrapit) Run(maxPostsPage uint, w io.Writer) error {
+	log.SetOutput(w)
+
+	log.Println("Scraping homepage...")
 	err := s.collector.Visit(s.Link)
 	if err != nil {
 		return err
+	}
+
+	origLink := s.Link
+	var i uint = 2
+	for (err == nil) && ((maxPostsPage == 0) || (maxPostsPage != 0 && i <= maxPostsPage)) {
+		log.Println("Scraping posts page #" + fmt.Sprint(i) + "...")
+		err = s.collector.Visit(origLink + "/posts/" + fmt.Sprint(i))
+		i++
 	}
 
 	return nil
