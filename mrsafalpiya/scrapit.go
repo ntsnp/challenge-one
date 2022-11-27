@@ -20,71 +20,117 @@ type blog struct {
 	thumbnailLink string
 }
 
-// Functions
-// ---------
+type scrapit struct {
+	/* inputs */
+	link           string
+	blogClass      string
+	blogStyleClass string
+	styleAttrib    string
 
-/* Blogs */
+	/* local states */
+	collector   *colly.Collector
+	backgrounds map[string]string
+	protocol    string
+	host        string
 
-func getBlogs(link string, divClass string, bgDivClass string) ([]blog, error) {
-	var blogs []blog
+	/* output */
+	blogs []blog
+}
 
+// Methods
+// -------
+
+/* scrapitSentry */
+
+func NewScrapit(link string) (*scrapit, error) {
 	u, err := url.ParseRequestURI(link)
 	if err != nil {
-		return blogs, err
+		return nil, err
 	}
 	protocol := u.Scheme + "://"
 	host := u.Host
 
 	if !govalidator.IsURL(link) {
-		return blogs, errors.New("Given link is not an URL")
+		return nil, errors.New("Given link is not an URL")
 	}
 
-	var styleBody string
-	var stylesheets []*css.Stylesheet
+	return &scrapit{
+		link:      link,
+		collector: colly.NewCollector(),
+		protocol:  protocol,
+		host:      host,
+	}, nil
+}
 
-	c := colly.NewCollector()
+func (s *scrapit) initBlogsScrape(blogClass string, blogStyleClass string, styleAttrib string) {
+	s.blogClass = blogClass
+	s.blogStyleClass = blogStyleClass
+	s.styleAttrib = styleAttrib
+	s.backgrounds = make(map[string]string)
 
-	c.OnHTML("style[data-emotion]", func(e *colly.HTMLElement) {
-		styleBody = e.Text
+	/* style attrib handler */
+
+	s.collector.OnHTML("style["+s.styleAttrib+"]", func(e *colly.HTMLElement) {
+		styleBody := e.Text
 
 		stylesheet, err := parser.Parse(styleBody)
 		if err != nil {
 			log.Fatalln(err)
 		}
-		stylesheets = append(stylesheets, stylesheet)
+		s.addBgs(stylesheet)
 	})
 
-	c.OnHTML(divClass, func(e *colly.HTMLElement) {
-		title := e.ChildText("h2")
+	/* blog div handler */
+
+	s.collector.OnHTML(s.blogClass, func(e *colly.HTMLElement) {
+		title := e.ChildText("h1, h2, h3")
 
 		childDivs := e.ChildAttrs("div", "class")
 		bgDiv := "." + strings.Split(childDivs[len(childDivs)-1], " ")[0]
-		_ = bgDiv
+		bgUrl := cleanUrl(urlFromCSSVal(s.backgrounds[bgDiv]), s.protocol, s.host)
 
-		var bgUrl string
-		for _, style := range stylesheets {
-			for _, rule := range style.Rules {
-				if len(rule.Selectors) > 0 && rule.Selectors[0] == bgDiv {
-					for _, decl := range rule.Declarations {
-						if decl.Property == "background-image" {
-							bgUrl = urlFromCSSVal(decl.Value)
-							bgUrl = cleanUrl(bgUrl, protocol, host)
-						}
-					}
-				}
-			}
-		}
-
-		blogs = append(blogs, blog{
+		s.blogs = append(s.blogs, blog{
 			title:         title,
 			thumbnailLink: bgUrl,
 		})
 	})
+}
 
-	err = c.Visit(link)
+func (s *scrapit) run() error {
+	err := s.collector.Visit(s.link)
 	if err != nil {
-		return blogs, err
+		return err
 	}
 
-	return blogs, nil
+	return nil
+}
+
+func (s *scrapit) addBgs(stylesheet *css.Stylesheet) {
+	for _, rule := range stylesheet.Rules {
+		for _, decl := range rule.Declarations {
+			if len(rule.Selectors) > 0 && decl.Property == "background-image" {
+				s.backgrounds[rule.Selectors[0]] = decl.Value
+			}
+		}
+	}
+}
+
+// Functions
+// ---------
+
+func getBlogs(link string, blogClass string, blogStyleClass string, styleAttrib string) ([]blog, error) {
+	scrapitInstance, err := NewScrapit(link)
+	if err != nil {
+		return scrapitInstance.blogs, err
+	}
+	_ = scrapitInstance
+
+	scrapitInstance.initBlogsScrape(blogClass, blogStyleClass, styleAttrib)
+
+	err = scrapitInstance.run()
+	if err != nil {
+		return scrapitInstance.blogs, err
+	}
+
+	return scrapitInstance.blogs, nil
 }
