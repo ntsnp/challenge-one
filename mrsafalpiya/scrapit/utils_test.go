@@ -64,6 +64,16 @@ func Test_cleanUrl(t *testing.T) {
 			args: args{"search/1", "https://", "foobar.com"},
 			want: "https://foobar.com/search/1",
 		},
+		{
+			name: "Positive outcome #5",
+			args: args{"/search/1", "https://", "foobar.com"},
+			want: "https://foobar.com/search/1",
+		},
+		{
+			name: "Positive outcome #6",
+			args: args{"//search/1", "https://", "foobar.com"},
+			want: "https://foobar.com/search/1",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
