@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+
+	"github.com/challenge-one/scrapit"
 )
 
 // Constants
@@ -16,6 +18,23 @@ const STYLE_ATTRIB = "data-emotion"
 // Functions
 // ---------
 
+func getBlogs(link string, blogClass string, blogStyleClass string, styleAttrib string) ([]scrapit.Blog, error) {
+	scrapitInstance, err := scrapit.NewScrapit(link)
+	if err != nil {
+		return scrapitInstance.Blogs, err
+	}
+	_ = scrapitInstance
+
+	scrapitInstance.InitBlogsScrape(blogClass, blogStyleClass, styleAttrib)
+
+	err = scrapitInstance.Run()
+	if err != nil {
+		return scrapitInstance.Blogs, err
+	}
+
+	return scrapitInstance.Blogs, nil
+}
+
 func main() {
 	blogs, err := getBlogs(LINK, BLOG_CLASS, BLOG_STYLE_CLASS, STYLE_ATTRIB)
 	if err != nil {
@@ -23,7 +42,7 @@ func main() {
 	}
 
 	for _, blog := range blogs {
-		fmt.Println(blog.title)
-		fmt.Println(blog.thumbnailLink)
+		fmt.Println(blog.Title)
+		fmt.Println(blog.ThumbnailLink)
 	}
 }

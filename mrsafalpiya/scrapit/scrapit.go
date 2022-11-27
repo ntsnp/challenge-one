@@ -1,4 +1,4 @@
-package main
+package scrapit
 
 import (
 	"errors"
@@ -15,14 +15,14 @@ import (
 // Structs
 // -------
 
-type blog struct {
-	title         string
-	thumbnailLink string
+type Blog struct {
+	Title         string
+	ThumbnailLink string
 }
 
 type scrapit struct {
 	/* inputs */
-	link           string
+	Link           string
 	blogClass      string
 	blogStyleClass string
 	styleAttrib    string
@@ -34,7 +34,7 @@ type scrapit struct {
 	host        string
 
 	/* output */
-	blogs []blog
+	Blogs []Blog
 }
 
 // Methods
@@ -55,14 +55,14 @@ func NewScrapit(link string) (*scrapit, error) {
 	}
 
 	return &scrapit{
-		link:      link,
+		Link:      link,
 		collector: colly.NewCollector(),
 		protocol:  protocol,
 		host:      host,
 	}, nil
 }
 
-func (s *scrapit) initBlogsScrape(blogClass string, blogStyleClass string, styleAttrib string) {
+func (s *scrapit) InitBlogsScrape(blogClass string, blogStyleClass string, styleAttrib string) {
 	s.blogClass = blogClass
 	s.blogStyleClass = blogStyleClass
 	s.styleAttrib = styleAttrib
@@ -89,15 +89,15 @@ func (s *scrapit) initBlogsScrape(blogClass string, blogStyleClass string, style
 		bgDiv := "." + strings.Split(childDivs[len(childDivs)-1], " ")[0]
 		bgUrl := cleanUrl(urlFromCSSVal(s.backgrounds[bgDiv]), s.protocol, s.host)
 
-		s.blogs = append(s.blogs, blog{
-			title:         title,
-			thumbnailLink: bgUrl,
+		s.Blogs = append(s.Blogs, Blog{
+			Title:         title,
+			ThumbnailLink: bgUrl,
 		})
 	})
 }
 
-func (s *scrapit) run() error {
-	err := s.collector.Visit(s.link)
+func (s *scrapit) Run() error {
+	err := s.collector.Visit(s.Link)
 	if err != nil {
 		return err
 	}
@@ -113,24 +113,4 @@ func (s *scrapit) addBgs(stylesheet *css.Stylesheet) {
 			}
 		}
 	}
-}
-
-// Functions
-// ---------
-
-func getBlogs(link string, blogClass string, blogStyleClass string, styleAttrib string) ([]blog, error) {
-	scrapitInstance, err := NewScrapit(link)
-	if err != nil {
-		return scrapitInstance.blogs, err
-	}
-	_ = scrapitInstance
-
-	scrapitInstance.initBlogsScrape(blogClass, blogStyleClass, styleAttrib)
-
-	err = scrapitInstance.run()
-	if err != nil {
-		return scrapitInstance.blogs, err
-	}
-
-	return scrapitInstance.blogs, nil
 }
