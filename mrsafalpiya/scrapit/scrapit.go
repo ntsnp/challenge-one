@@ -19,6 +19,7 @@ import (
 
 type Blog struct {
 	Title         string
+	Info          string
 	ThumbnailLink string
 	PostLink      string
 	Slug          string
@@ -66,7 +67,7 @@ func NewScrapit(link string) (*scrapit, error) {
 	}, nil
 }
 
-func (s *scrapit) InitBlogsScrape(blogClass string, blogLinkClass string, blogStyleClass string, styleAttrib string) {
+func (s *scrapit) InitBlogsScrape(blogClass string, blogInfoClass string, blogLinkClass string, blogStyleClass string, styleAttrib string) {
 	s.blogClass = blogClass
 	s.blogStyleClass = blogStyleClass
 	s.styleAttrib = styleAttrib
@@ -88,6 +89,7 @@ func (s *scrapit) InitBlogsScrape(blogClass string, blogLinkClass string, blogSt
 
 	s.collector.OnHTML(s.blogClass, func(e *colly.HTMLElement) {
 		title := e.ChildText("h1, h2, h3")
+		info := e.ChildText(blogInfoClass)
 		postLink := cleanUrl(e.ChildAttr(blogLinkClass, "href"), s.protocol, s.host)
 
 		childDivs := e.ChildAttrs("div", "class")
@@ -97,6 +99,7 @@ func (s *scrapit) InitBlogsScrape(blogClass string, blogLinkClass string, blogSt
 
 		s.Blogs = append(s.Blogs, Blog{
 			Title:         title,
+			Info:          info,
 			ThumbnailLink: bgUrl,
 			PostLink:      postLink,
 			Slug:          slug,

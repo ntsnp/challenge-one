@@ -15,6 +15,7 @@ import (
 
 const LINK = "https://blog.sentry.io"
 const BLOG_CLASS = ".css-spjg5j.e19gd7e57"
+const BLOG_INFO_CLASS = ".css-1t38r8t.e19gd7e51"
 const BLOG_LINK_CLASS = ".css-1qh9hqn.e19gd7e56"
 const BLOG_STYLE_CLASS = ".e19gd7e53"
 const STYLE_ATTRIB = "data-emotion"
@@ -33,14 +34,14 @@ var outputDir string
  * Scrapes blogs from at most `maxPostsPage` post pages. Pass 0 to get all the
  * blogs.
  */
-func getBlogs(maxPostsPage uint, link string, blogClass string, blogLinkClass string, blogStyleClass string, styleAttrib string) ([]scrapit.Blog, error) {
+func getBlogs(maxPostsPage uint, link string, blogClass string, blogInfoClass string, blogLinkClass string, blogStyleClass string, styleAttrib string) ([]scrapit.Blog, error) {
 	scrapitInstance, err := scrapit.NewScrapit(link)
 	if err != nil {
 		return scrapitInstance.Blogs, err
 	}
 	_ = scrapitInstance
 
-	scrapitInstance.InitBlogsScrape(blogClass, blogLinkClass, blogStyleClass, styleAttrib)
+	scrapitInstance.InitBlogsScrape(blogClass, blogInfoClass, blogLinkClass, blogStyleClass, styleAttrib)
 
 	if maxPostsPage == 0 {
 		log.Println("NOTE: All blog posts are begin scraped. This may take a while!")
@@ -83,13 +84,14 @@ func initFlags() {
 func main() {
 	initFlags()
 
-	blogs, err := getBlogs(*maxPostsPage, LINK, BLOG_CLASS, BLOG_LINK_CLASS, BLOG_STYLE_CLASS, STYLE_ATTRIB)
+	blogs, err := getBlogs(*maxPostsPage, LINK, BLOG_CLASS, BLOG_INFO_CLASS, BLOG_LINK_CLASS, BLOG_STYLE_CLASS, STYLE_ATTRIB)
 	if err != nil {
 		log.Fatalf("[ERROR] Couldn't get blogs: %s", err.Error())
 	}
 
 	for _, blog := range blogs {
 		fmt.Println(blog.Title)
+		fmt.Println(blog.Info)
 		fmt.Println(blog.ThumbnailLink)
 		fmt.Println(blog.PostLink)
 		fmt.Println(blog.Slug)
