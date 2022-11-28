@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/challenge-one/scrapit"
+	"github.com/mrsafalpiya/get-sentry-blogs/scrapit"
 )
 
 func Test_getBlogs(t *testing.T) {

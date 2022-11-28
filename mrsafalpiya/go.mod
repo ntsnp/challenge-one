@@ -1,4 +1,4 @@
-module github.com/challenge-one
+module github.com/mrsafalpiya/get-sentry-blogs
 
 go 1.19
 

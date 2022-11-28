@@ -1,10 +1,13 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"io"
 	"log"
+	"os"
 
-	"github.com/challenge-one/scrapit"
+	"github.com/mrsafalpiya/get-sentry-blogs/scrapit"
 )
 
 // Constants
@@ -15,6 +18,13 @@ const BLOG_CLASS = ".css-spjg5j.e19gd7e57"
 const BLOG_LINK_CLASS = ".css-1qh9hqn.e19gd7e56"
 const BLOG_STYLE_CLASS = ".e19gd7e53"
 const STYLE_ATTRIB = "data-emotion"
+
+// Arguments/Flags
+// ---------------
+
+var maxPostsPage *uint
+var toPrintHelp *bool
+var outputDir string
 
 // Functions
 // ---------
@@ -44,8 +54,36 @@ func getBlogs(maxPostsPage uint, link string, blogClass string, blogLinkClass st
 	return scrapitInstance.Blogs, nil
 }
 
+func usage(w io.Writer) {
+	flag.CommandLine.SetOutput(w)
+	fmt.Fprintf(w, "Usage: %s [options] output_dir\n\nWhere options are:\n", os.Args[0])
+	flag.CommandLine.PrintDefaults()
+	flag.CommandLine.Name()
+}
+
+func initFlags() {
+	maxPostsPage = flag.Uint("p", 0, "Maximum number of posts page to scrape the blogs from")
+	toPrintHelp = flag.Bool("help", false, "Print this help/usage message")
+
+	flag.Parse()
+
+	if *toPrintHelp {
+		usage(os.Stdout)
+		os.Exit(0)
+	}
+
+	nonFlagArgs := flag.Args()
+	if len(nonFlagArgs) != 1 {
+		usage(os.Stderr)
+		os.Exit(1)
+	}
+	outputDir = nonFlagArgs[0]
+}
+
 func main() {
-	blogs, err := getBlogs(2, LINK, BLOG_CLASS, BLOG_LINK_CLASS, BLOG_STYLE_CLASS, STYLE_ATTRIB)
+	initFlags()
+
+	blogs, err := getBlogs(*maxPostsPage, LINK, BLOG_CLASS, BLOG_LINK_CLASS, BLOG_STYLE_CLASS, STYLE_ATTRIB)
 	if err != nil {
 		log.Fatalf("[ERROR] Couldn't get blogs: %s", err.Error())
 	}

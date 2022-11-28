@@ -1,5 +1,5 @@
 # Binaries for programs and plugins
-challenge-one
+get-sentry-blogs
 *.exe
 *.exe~
 *.dll
