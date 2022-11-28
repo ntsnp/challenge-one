@@ -2,6 +2,7 @@ package scrapit
 
 import (
 	"net/url"
+	"path"
 	"strings"
 )
 
@@ -54,4 +55,9 @@ func cleanUrl(inputUrl string, protocol string, host string) string {
 	}
 
 	return inputUrl
+}
+
+func urlSlug(inputUrl string) string {
+	splits := strings.Split(path.Clean(inputUrl), "/")
+	return splits[len(splits)-1]
 }

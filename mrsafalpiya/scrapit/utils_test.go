@@ -83,3 +83,36 @@ func Test_cleanUrl(t *testing.T) {
 		})
 	}
 }
+
+func Test_urlSlug(t *testing.T) {
+	type args struct {
+		inputUrl string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "Positive outcome #1",
+			args: args{
+				inputUrl: "https://foobar.com/foo-bar",
+			},
+			want: "foo-bar",
+		},
+		{
+			name: "Positive outcome #2",
+			args: args{
+				inputUrl: "https://foobar.com/foo-bar/",
+			},
+			want: "foo-bar",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := urlSlug(tt.args.inputUrl); got != tt.want {
+				t.Errorf("urlSlug() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -92,5 +92,6 @@ func main() {
 		fmt.Println(blog.Title)
 		fmt.Println(blog.ThumbnailLink)
 		fmt.Println(blog.PostLink)
+		fmt.Println(blog.Slug)
 	}
 }

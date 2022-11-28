@@ -21,6 +21,7 @@ type Blog struct {
 	Title         string
 	ThumbnailLink string
 	PostLink      string
+	Slug          string
 }
 
 type scrapit struct {
@@ -92,11 +93,13 @@ func (s *scrapit) InitBlogsScrape(blogClass string, blogLinkClass string, blogSt
 		childDivs := e.ChildAttrs("div", "class")
 		bgDiv := "." + strings.Split(childDivs[len(childDivs)-1], " ")[0]
 		bgUrl := cleanUrl(urlFromCSSVal(s.backgrounds[bgDiv]), s.protocol, s.host)
+		slug := urlSlug(postLink)
 
 		s.Blogs = append(s.Blogs, Blog{
 			Title:         title,
 			ThumbnailLink: bgUrl,
 			PostLink:      postLink,
+			Slug:          slug,
 		})
 	})
 }
