@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
+	"path"
+	"path/filepath"
+	"strconv"
 
 	"github.com/mrsafalpiya/get-sentry-blogs/scrapit"
 )
@@ -25,6 +29,7 @@ const STYLE_ATTRIB = "data-emotion"
 
 var maxPostsPage *uint
 var toPrintHelp *bool
+var toSave *bool
 var outputDir string
 
 // Functions
@@ -44,7 +49,7 @@ func getBlogs(maxPostsPage uint, link string, blogClass string, blogInfoClass st
 	scrapitInstance.InitBlogsScrape(blogClass, blogInfoClass, blogLinkClass, blogStyleClass, styleAttrib)
 
 	if maxPostsPage == 0 {
-		log.Println("NOTE: All blog posts are begin scraped. This may take a while!")
+		log.Println("[NOTE] All blog posts are begin scraped. This may take a while!")
 	}
 
 	err = scrapitInstance.Run(maxPostsPage, log.Default().Writer())
@@ -64,9 +69,11 @@ func usage(w io.Writer) {
 
 func initFlags() {
 	maxPostsPage = flag.Uint("p", 0, "Maximum number of posts page to scrape the blogs from")
+	toSave = flag.Bool("no-save", false, "Don't save the output")
 	toPrintHelp = flag.Bool("help", false, "Print this help/usage message")
 
 	flag.Parse()
+	*toSave = !*toSave
 
 	if *toPrintHelp {
 		usage(os.Stdout)
@@ -74,26 +81,96 @@ func initFlags() {
 	}
 
 	nonFlagArgs := flag.Args()
-	if len(nonFlagArgs) != 1 {
+	if (len(nonFlagArgs) != 1) && (*toSave) {
+		fmt.Fprintf(os.Stderr, "No output directory was given. Either pass the directory as an argument or pass -no-save to not save the output.\n\n")
 		usage(os.Stderr)
 		os.Exit(1)
 	}
-	outputDir = nonFlagArgs[0]
+	if (len(nonFlagArgs) == 1) && (!*toSave) {
+		fmt.Println("[NOTE] -no-save passed with an output directory as argument")
+	}
+	if *toSave {
+		outputDir = nonFlagArgs[0]
+	}
 }
 
 func main() {
 	initFlags()
+
+	if *toSave {
+		err := os.Mkdir(outputDir, os.ModePerm)
+		if err != nil {
+			log.Fatalf("[ERROR] Couldn't work with output directory '%s' for blogs: %s", outputDir, err)
+		}
+	}
 
 	blogs, err := getBlogs(*maxPostsPage, LINK, BLOG_CLASS, BLOG_INFO_CLASS, BLOG_LINK_CLASS, BLOG_STYLE_CLASS, STYLE_ATTRIB)
 	if err != nil {
 		log.Fatalf("[ERROR] Couldn't get blogs: %s", err.Error())
 	}
 
-	for _, blog := range blogs {
+	for i, blog := range blogs {
+		fmt.Printf("[%d / %d]\n", i+1, len(blogs))
 		fmt.Println(blog.Title)
 		fmt.Println(blog.Info)
 		fmt.Println(blog.ThumbnailLink)
 		fmt.Println(blog.PostLink)
 		fmt.Println(blog.Slug)
+		fmt.Println()
+	}
+	fmt.Printf("Got %d blogs!\n", len(blogs))
+
+	if !*toSave {
+		os.Exit(0)
+	}
+
+	log.Printf("Writing blogs info to the directory '%s'", outputDir)
+
+	client := http.Client{
+		CheckRedirect: func(r *http.Request, via []*http.Request) error {
+			r.URL.Opaque = r.URL.Path
+			return nil
+		},
+	}
+
+	var zeroPaddings int = len(strconv.Itoa(len(blogs)))
+	for i, blog := range blogs {
+		blogDir := path.Join(outputDir, fmt.Sprintf("%0*d", zeroPaddings, i+1)+"-"+blog.Slug)
+
+		log.Printf("[%d / %d] Saving '%s' as '%s'", i+1, len(blogs), blog.Title, blogDir)
+
+		err = os.MkdirAll(blogDir, os.ModePerm)
+		if err != nil {
+			log.Fatalf("[ERROR] Couldn't create directory for blog: %s", err)
+		}
+
+		fileName := "info.md"
+		filePath := path.Join(blogDir, fileName)
+		file, err := os.Create(path.Join(blogDir, fileName))
+		if err != nil {
+			log.Fatalf("[WARNING] Couldn't create file '%s': %s", filePath, err)
+		}
+		file.WriteString("---\nTitle: " + blog.Title + "\nInfo: " + blog.Info + "\nPost Link: " + blog.PostLink + "\nThumbnail Link: " + blog.ThumbnailLink + "\nSlug: " + blog.Slug + "\n---")
+		file.Close()
+
+		fileName = "thumbnail" + filepath.Ext(blog.ThumbnailLink)
+		filePath = path.Join(blogDir, fileName)
+		file, err = os.Create(path.Join(blogDir, fileName))
+		if err != nil {
+			log.Fatalf("[WARNING] Couldn't create file '%s': %s", filePath, err)
+		}
+
+		resp, err := client.Get(blog.ThumbnailLink)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = io.Copy(file, resp.Body)
+		if err != nil {
+			log.Printf("[WARNING] Couldn't download '%s': %s", blog.ThumbnailLink, err)
+		}
+
+		resp.Body.Close()
+		file.Close()
 	}
 }
