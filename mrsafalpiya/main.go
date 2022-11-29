@@ -1,8 +1,10 @@
 package main
 
 import (
+	"embed"
 	"flag"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -23,6 +25,12 @@ const BLOG_INFO_CLASS = ".css-1t38r8t.e19gd7e51"
 const BLOG_LINK_CLASS = ".css-1qh9hqn.e19gd7e56"
 const BLOG_STYLE_CLASS = ".e19gd7e53"
 const STYLE_ATTRIB = "data-emotion"
+
+// Templates
+// ---------
+
+//go:embed templates
+var tmplDir embed.FS
 
 // Arguments/Flags
 // ---------------
@@ -107,9 +115,35 @@ func saveBlogs(blogs []scrapit.Blog, outputDir string) {
 			log.Printf("[WARNING] Couldn't download '%s': %s", blog.ThumbnailLink, err)
 		}
 
+		blogs[i].ThumbnailLink = path.Join(fmt.Sprintf("%0*d", zeroPaddings, i+1)+"-"+blog.Slug, fileName)
+
 		resp.Body.Close()
 		file.Close()
 	}
+
+	tmplFileLoc := path.Join(outputDir, "index.html")
+	log.Printf("Creating frontend html file as '%s'", tmplFileLoc)
+
+	tmplFile, err := os.Create(tmplFileLoc)
+	if err != nil {
+		log.Printf("[WARNING] Couldn't create frontend html file: %s", err)
+	}
+
+	tmpl, err := template.ParseFS(tmplDir, "templates/frontend.html")
+	if err != nil {
+		log.Printf("[ERROR] Couldn't parse frontend html template file: %s", err)
+	}
+	tmplData := struct {
+		Blogs []scrapit.Blog
+	}{
+		Blogs: blogs,
+	}
+	err = tmpl.Execute(tmplFile, tmplData)
+	if err != nil {
+		log.Printf("[WARNING] Error in template file: %s", err)
+	}
+
+	fmt.Printf("All done! Open the frontend file '%s'\n", tmplFileLoc)
 }
 
 func printBlogsDetail(blogs []scrapit.Blog) {
