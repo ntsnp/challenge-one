@@ -60,6 +60,72 @@ func getBlogs(maxPostsPage uint, link string, blogClass string, blogInfoClass st
 	return scrapitInstance.Blogs, nil
 }
 
+func saveBlogs(blogs []scrapit.Blog, outputDir string) {
+	log.Printf("Writing blogs info to the directory '%s'", outputDir)
+
+	client := http.Client{
+		CheckRedirect: func(r *http.Request, via []*http.Request) error {
+			r.URL.Opaque = r.URL.Path
+			return nil
+		},
+	}
+
+	var zeroPaddings int = len(strconv.Itoa(len(blogs)))
+	for i, blog := range blogs {
+		blogDir := path.Join(outputDir, fmt.Sprintf("%0*d", zeroPaddings, i+1)+"-"+blog.Slug)
+
+		log.Printf("[%d / %d] Saving '%s' as '%s'", i+1, len(blogs), blog.Title, blogDir)
+
+		err := os.MkdirAll(blogDir, os.ModePerm)
+		if err != nil {
+			log.Fatalf("[ERROR] Couldn't create directory for blog: %s", err)
+		}
+
+		fileName := "info.md"
+		filePath := path.Join(blogDir, fileName)
+		file, err := os.Create(path.Join(blogDir, fileName))
+		if err != nil {
+			log.Fatalf("[WARNING] Couldn't create file '%s': %s", filePath, err)
+		}
+		file.WriteString("---\nTitle: " + blog.Title + "\nInfo: " + blog.Info + "\nPost Link: " + blog.PostLink + "\nThumbnail Link: " + blog.ThumbnailLink + "\nSlug: " + blog.Slug + "\n---")
+		file.Close()
+
+		fileName = "thumbnail" + filepath.Ext(blog.ThumbnailLink)
+		filePath = path.Join(blogDir, fileName)
+		file, err = os.Create(path.Join(blogDir, fileName))
+		if err != nil {
+			log.Fatalf("[WARNING] Couldn't create file '%s': %s", filePath, err)
+		}
+
+		resp, err := client.Get(blog.ThumbnailLink)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = io.Copy(file, resp.Body)
+		if err != nil {
+			log.Printf("[WARNING] Couldn't download '%s': %s", blog.ThumbnailLink, err)
+		}
+
+		resp.Body.Close()
+		file.Close()
+	}
+}
+
+func printBlogsDetail(blogs []scrapit.Blog) {
+	for i, blog := range blogs {
+		fmt.Printf("[%d / %d]\n", i+1, len(blogs))
+		fmt.Println(blog.Title)
+		fmt.Println(blog.Info)
+		fmt.Println(blog.ThumbnailLink)
+		fmt.Println(blog.PostLink)
+		fmt.Println(blog.Slug)
+		fmt.Println()
+	}
+	fmt.Printf("Got %d blogs!\n", len(blogs))
+
+}
+
 func usage(w io.Writer) {
 	flag.CommandLine.SetOutput(w)
 	fmt.Fprintf(w, "Usage: %s [options] output_dir\n\nWhere options are:\n", os.Args[0])
@@ -96,7 +162,6 @@ func initFlags() {
 
 func main() {
 	initFlags()
-
 	if *toSave {
 		err := os.Mkdir(outputDir, os.ModePerm)
 		if err != nil {
@@ -109,68 +174,11 @@ func main() {
 		log.Fatalf("[ERROR] Couldn't get blogs: %s", err.Error())
 	}
 
-	for i, blog := range blogs {
-		fmt.Printf("[%d / %d]\n", i+1, len(blogs))
-		fmt.Println(blog.Title)
-		fmt.Println(blog.Info)
-		fmt.Println(blog.ThumbnailLink)
-		fmt.Println(blog.PostLink)
-		fmt.Println(blog.Slug)
-		fmt.Println()
-	}
-	fmt.Printf("Got %d blogs!\n", len(blogs))
+	printBlogsDetail(blogs)
 
 	if !*toSave {
 		os.Exit(0)
 	}
 
-	log.Printf("Writing blogs info to the directory '%s'", outputDir)
-
-	client := http.Client{
-		CheckRedirect: func(r *http.Request, via []*http.Request) error {
-			r.URL.Opaque = r.URL.Path
-			return nil
-		},
-	}
-
-	var zeroPaddings int = len(strconv.Itoa(len(blogs)))
-	for i, blog := range blogs {
-		blogDir := path.Join(outputDir, fmt.Sprintf("%0*d", zeroPaddings, i+1)+"-"+blog.Slug)
-
-		log.Printf("[%d / %d] Saving '%s' as '%s'", i+1, len(blogs), blog.Title, blogDir)
-
-		err = os.MkdirAll(blogDir, os.ModePerm)
-		if err != nil {
-			log.Fatalf("[ERROR] Couldn't create directory for blog: %s", err)
-		}
-
-		fileName := "info.md"
-		filePath := path.Join(blogDir, fileName)
-		file, err := os.Create(path.Join(blogDir, fileName))
-		if err != nil {
-			log.Fatalf("[WARNING] Couldn't create file '%s': %s", filePath, err)
-		}
-		file.WriteString("---\nTitle: " + blog.Title + "\nInfo: " + blog.Info + "\nPost Link: " + blog.PostLink + "\nThumbnail Link: " + blog.ThumbnailLink + "\nSlug: " + blog.Slug + "\n---")
-		file.Close()
-
-		fileName = "thumbnail" + filepath.Ext(blog.ThumbnailLink)
-		filePath = path.Join(blogDir, fileName)
-		file, err = os.Create(path.Join(blogDir, fileName))
-		if err != nil {
-			log.Fatalf("[WARNING] Couldn't create file '%s': %s", filePath, err)
-		}
-
-		resp, err := client.Get(blog.ThumbnailLink)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		_, err = io.Copy(file, resp.Body)
-		if err != nil {
-			log.Printf("[WARNING] Couldn't download '%s': %s", blog.ThumbnailLink, err)
-		}
-
-		resp.Body.Close()
-		file.Close()
-	}
+	saveBlogs(blogs, outputDir)
 }
