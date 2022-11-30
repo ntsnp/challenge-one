@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+import os
+import sys
+
+import cssutils
+import requests
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from pymongo import MongoClient
+
+load_dotenv()
+
+url = 'https://blog.sentry.io'
+defaultUrl = 'https://blog.sentry.io'
+
+
+def get_db():
+    client = MongoClient(os.getenv("MONGODB_URI"))
+    return client["sentry"]
+
+
+def scrape_news(url, folder):
+    page = 1
+    while True:
+        if (page > 1):
+            url = 'https://blog.sentry.io/posts/'+str(page)+'/'
+        response = requests.get(url)
+
+        if response.status_code != 200:
+            break
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+        news = soup.find_all('div', class_='e19gd7e57')
+        for item in news:
+            title = item.find('h2').text
+            category = item.find('a', class_="css-tme7sr").text
+            link = item.find('a', class_="e19gd7e56")["href"]
+            itemResponse = requests.get(defaultUrl + link)
+            itemSoup = BeautifulSoup(itemResponse.text, 'html.parser')
+            imageContainer = itemSoup.find('div', class_="e28b8fo1")
+            if (imageContainer):
+                img = imageContainer.find('img')
+                if (img):
+                    image = "https:" + imageContainer.find('img')["src"]
+            else:
+                image = "https://blog.sentry.io/static/default-e58f27d48dbf46f8ddf19dc2404f62a9.png"
+            content = itemSoup.find('div', class_="e3a9p9n18").prettify()
+            db = get_db()
+            collection = db["posts"]
+            post = {
+                "title": title,
+                "category": category,
+                "link": link,
+                "image": image,
+                "content": content
+            }
+
+            print("Inserting post : `" + title + "` to Database")
+            collection.insert_one(post)
+
+            if (os.path.isdir(folder) == False):
+                os.mkdir(folder)
+
+            imageReq = requests.get(image)
+            imageFile = open(folder + "/" + title + '.png', 'wb')
+            imageFile.write(imageReq.content)
+            imageFile.close()
+
+        page = page + 1
+
+
+if (__name__ == '__main__'):
+    try:
+        folder = sys.argv[1]
+        if (folder):
+            scrape_news(url, folder)
+        else:
+            print("Please provide a folder name")
+    except IndexError:
+        print("Please provide a folder name")
+    except KeyboardInterrupt:
+        print("Exiting")
