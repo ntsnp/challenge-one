@@ -10,7 +10,8 @@ MONOGODB_URI=<your_mongodb_connection_string>
 ```
 ./get-sentry-blogs folderName
 ```
-> works on linux machine, for windows add .py extension to the file and run it
+> works on linux machine, for windows add .py extension to the file and run it.
+
 > If you face permission error use `sudo chmod +x get-sentry-blogs`
 
 - Frontend
