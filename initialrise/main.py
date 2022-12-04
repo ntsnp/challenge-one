@@ -82,7 +82,7 @@ def savetodb(dbname):
             dbcur.execute('''INSERT into blog VALUES(?,?,?,?)''',(pageno+1,title,body,url))
             db.commit()
 
-parser = argparse.ArgumentParser("Get blogs from sentry.io")
+parser = argparse.ArgumentParser("Get blogs from sentry.io. Use main.py -o foldername or -d dbname")
 parser.add_argument("-o","--output",type=str, help = "Output Folder")
 parser.add_argument("-d","--database",type=str, help = "Output Database File")
 args = parser.parse_args()
@@ -95,7 +95,6 @@ def main():
     elif args.database: 
         savetodb(databasefile)
     else:
-        print("Type python program.py -d out.db or python program.py -o outfolder")
-
+        print("Type python main.py -h") 
 if __name__ == '__main__':
     main()
