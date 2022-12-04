@@ -2,7 +2,8 @@
 Type `python main.py -h` for help
 
     [initialrise@pop-os ~]$ python main.py -h
-    usage: Get blogs from sentry.io. Use main.py -o foldername or main.py -d dbname 
+    usage: Get blogs from sentry.io. 
+    Use main.py -o foldername or main.py -d dbname 
 
 	options:
 	  -h, --help            show this help message and exit

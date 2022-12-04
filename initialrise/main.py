@@ -3,6 +3,8 @@ import requests
 import json
 import sqlite3
 import argparse
+from argparse import RawTextHelpFormatter
+
 
 def grab_params(page):
     index = "https://blog.sentry.io/page-data/index/page-data.json"
@@ -82,7 +84,7 @@ def savetodb(dbname):
             dbcur.execute('''INSERT into blog VALUES(?,?,?,?)''',(pageno+1,title,body,url))
             db.commit()
 
-parser = argparse.ArgumentParser("Get blogs from sentry.io. Use main.py -o foldername or -d dbname")
+parser = argparse.ArgumentParser(description="Get blogs from sentry.io. Use main.py -o foldername or main.py -d dbname",formatter_class=RawTextHelpFormatter)
 parser.add_argument("-o","--output",type=str, help = "Output Folder")
 parser.add_argument("-d","--database",type=str, help = "Output Database File")
 args = parser.parse_args()
