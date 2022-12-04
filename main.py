@@ -29,3 +29,23 @@ def grab_params(page):
         outlist.append(bt_list)
 
     return outlist
+
+def grab_all():
+    print("Counting Total Pages")
+    pageno = 2
+    total_pages = 0
+    while True:
+        url = f"https://blog.sentry.io/page-data/posts/{pageno}/page-data.json"
+        response = requests.get(url).text
+        total_pages += 1
+        pageno += 1
+        if "Ah, hell" in response:
+            break;
+
+    print(f"Total pages was found to be {total_pages}")
+    pagelist = []
+    for p in range(1,total_pages+1):
+        out = grab_params(p)
+        pagelist.append(out)
+
+    return pagelist
