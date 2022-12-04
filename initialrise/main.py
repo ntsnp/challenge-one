@@ -63,3 +63,21 @@ def download_article(foldername):
             bodyedit = f'''<img src="{thumburl}" alt="thumbnail">'''+body
             with open(title,"w") as article:
                 article.write(bodyedit)
+
+def savetodb(dbname):
+    db = sqlite3.connect(dbname)
+    dbcur = db.cursor()
+    dbcur.execute('''
+            CREATE TABLE blog( pageno INTEGER,
+                               title TEXT,
+                               html TEXT,
+                               thumburl TEXT)
+                               ''')
+    alldata = grab_all()
+    for pageno,page in enumerate(alldata):
+        for blog in page:
+            title = blog[0]
+            body = blog[1]
+            url = blog[2]
+            dbcur.execute('''INSERT into blog VALUES(?,?,?,?)''',(pageno+1,title,body,url))
+            db.commit()
