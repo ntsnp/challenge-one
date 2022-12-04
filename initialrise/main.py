@@ -81,3 +81,10 @@ def savetodb(dbname):
             url = blog[2]
             dbcur.execute('''INSERT into blog VALUES(?,?,?,?)''',(pageno+1,title,body,url))
             db.commit()
+
+parser = argparse.ArgumentParser("Get blogs from sentry.io")
+parser.add_argument("-o","--output",type=str, help = "Output Folder")
+parser.add_argument("-d","--database",type=str, help = "Output Database File")
+args = parser.parse_args()
+outputfolder = args.output
+databasefile = args.database
