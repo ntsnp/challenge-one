@@ -39,3 +39,4 @@ You're supposed to build a web-scraper tool which performs the following operati
 1. Code Quality
 2. Proper Use of Git
 3. Performance and Efficiency
+
