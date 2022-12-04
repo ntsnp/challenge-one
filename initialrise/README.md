@@ -1,7 +1,8 @@
 ## Sentry Blog Grabber
 Type `python main.py -h` for help
-	[initialrise@pop-os ~]$ python main.py -h
-	usage: Get blogs from sentry.io. Use main.py -o foldername or -d dbname [-h] [-o OUTPUT] [-d DATABASE]
+
+    	[initialrise@pop-os ~]$ python main.py -h
+    	usage: Get blogs from sentry.io. Use main.py -o foldername or -d dbname [-h] [-o OUTPUT] [-d DATABASE]
 
 	options:
 	  -h, --help            show this help message and exit
