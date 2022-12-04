@@ -88,3 +88,14 @@ parser.add_argument("-d","--database",type=str, help = "Output Database File")
 args = parser.parse_args()
 outputfolder = args.output
 databasefile = args.database
+
+def main():
+    if args.output:
+        download_article(outputfolder)
+    elif args.database: 
+        savetodb(databasefile)
+    else:
+        print("Type python program.py -d out.db or python program.py -o outfolder")
+
+if __name__ == '__main__':
+    main()
